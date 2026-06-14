@@ -76,7 +76,7 @@ starlincs run \
 
 #### Arguments
 
-| Argument | Required | Description |
+|Argument |Required |Description |
 |---|---|---|
 | `--reference` | **Yes** | Tissue preset name (e.g. `lung`) or path to a custom drug-gene CSV |
 | `--up` | **Yes** | Plain-text file of upregulated gene symbols, one per line |
