@@ -34,4 +34,4 @@ wget https://github.com//starlincs/archive/refs/heads/main.zip
 unzip main.zip
 ```
 #### Step 1 (Alternative): Download the file
-[![Download STARLINCS](https://img.shields.io/github/v/release/epigen-bioinfolab/CHROMACS)](https://github.com/epigen-bioinfolab/CHROMACS/releases)
+[[Download STARLINCS](https://img.shields.io/github/v/release/epigen-bioinfolab/CHROMACS)](https://github.com/epigen-bioinfolab/CHROMACS/releases)
