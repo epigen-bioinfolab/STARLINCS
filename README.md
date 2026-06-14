@@ -18,10 +18,20 @@ STARLINCS ranks drugs by the similarity (or reversal) between a user-supplied ge
 
 ## Features
 
+- **Tissue-specific reference presets**: bone, breast, cervix, central nervous system, haematopoietic and lymphoid tissue, kidney, large intestine, liver, lung, pancreas, placenta, prostate, skin, soft tissue — or supply your own reference CSV
 - **Two modes**
   - `reverse` — rank drugs that reverses the transcriptomic signature (e.g. for drug repurposing against a disease signature)
   - `mimic` — rank drugs that reproduce your signature (e.g. for identifying mode of action of novel compounds)
-- **Tissue-specific reference presets**: bone, breast, cervix, central nervous system, haematopoietic and lymphoid tissue, kidney, large intestine, liver, lung, pancreas, placenta, prostate, skin, soft tissue — or supply your own reference CSV
 - **Graphical User Interface** built with Tkinter for interactive use
 - **Command Line Interface** for batch/scripted analysis
 - Optional export of leading-edge genes for top-ranked drugs
+
+## Installation
+### For Linux users
+#### Step 1: Download the file
+```bash
+wget https://github.com//starlincs/archive/refs/heads/main.zip
+unzip main.zip
+```
+#### Step 1 (Alternative): Download the file
+[![Download STARLINCS](https://img.shields.io/github/v/release/epigen-bioinfolab/CHROMACS)](https://github.com/epigen-bioinfolab/CHROMACS/releases)
