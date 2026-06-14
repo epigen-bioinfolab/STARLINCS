@@ -78,15 +78,15 @@ starlincs run \
 
 | Argument | Required | Description |
 |---|---|---|
-| `--reference` | Yes | Tissue preset name (e.g. `lung`) or path to a custom drug-gene CSV |
-| `--up` | Yes | Plain-text file of upregulated gene symbols, one per line |
-| `--down` | Yes | Plain-text file of downregulated gene symbols, one per line |
-| `--mode` | Yes | `mimic` or `reverse` |
+| `--reference` | **Yes** | Tissue preset name (e.g. `lung`) or path to a custom drug-gene CSV |
+| `--up` | **Yes** | Plain-text file of upregulated gene symbols, one per line |
+| `--down` | **Yes** | Plain-text file of downregulated gene symbols, one per line |
+| `--mode` | **Yes** | `mimic` or `reverse` |
 | `--seed` | No | Random seed (default: `1234`) |
 | `--nperm` | No | Number of permutations (default: `1000`) |
 | `--max-gene` | No | Maximum genes per set (default: `500`) |
 | `--min-gene` | No | Minimum genes per set (default: `20`) |
-| `--output` | Yes | Output directory for `STARLINCS_results.csv` |
+| `--output` | **Yes** | Output directory for `STARLINCS_results.csv` |
 | `--include-leading-genes` | No | Export leading genes for the top N drugs as a zip |
 
 
@@ -97,6 +97,13 @@ Running an analysis produces:
 - `<drug_name>_leading_genes.zip` (optional) — leading-edge up/down gene lists for top-ranked drugs
 - `starlincs.log` — detailed session log written to the current working directory
 
+## Contact
+
+For any queries and support, please reach us at **epigen.bioinfolab@gmail.com**  
+Visit our lab page: [www.epigen-bioinfolab.com](https://www.epigen-bioinfolab.com/)
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
 
