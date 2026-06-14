@@ -76,47 +76,19 @@ starlincs run \
 
 #### Arguments
 
-|
-Argument
-| Required
-| Description
-|
-
-|---
-|
----
-|
----
-|
-
-| 
-`--reference` | Yes | Tissue preset name (e.g. `lung`) or path to a custom drug-gene CSV |
-
-| 
-`--up` | Yes | Plain-text file of upregulated gene symbols, one per line |
-
-| 
-`--down` | Yes | Plain-text file of downregulated gene symbols, one per line |
-
+| Argument | Required | Description |
+|---|---|---|
+| `--reference` | Yes | Tissue preset name (e.g. `lung`) or path to a custom drug-gene CSV |
+| `--up` | Yes | Plain-text file of upregulated gene symbols, one per line |
+| `--down` | Yes | Plain-text file of downregulated gene symbols, one per line |
 | `--mode` | Yes | `mimic` or `reverse` |
+| `--seed` | No | Random seed (default: `1234`) |
+| `--nperm` | No | Number of permutations (default: `1000`) |
+| `--max-gene` | No | Maximum genes per set (default: `500`) |
+| `--min-gene` | No | Minimum genes per set (default: `20`) |
+| `--output` | Yes | Output directory for `STARLINCS_results.csv` |
+| `--include-leading-genes` | No | Export leading genes for the top N drugs as a zip |
 
-| 
-`--seed` | No | Random seed (default: `1234`) |
-
-| 
-`--nperm` | No | Number of permutations (default: `1000`) |
-
-| 
-`--max-gene` | No | Maximum genes per set (default: `500`) |
-
-| 
-`--min-gene` | No | Minimum genes per set (default: `20`) |
-
-| 
-`--output` | Yes | Output directory for `STARLINCS_results.csv` |
-
-| 
-`--include-leading-genes` | No | Export leading genes for the top N drugs as a zip |
 
 ## Output
 Running an analysis produces:
