@@ -41,6 +41,12 @@ wget https://github.com//starlincs/archive/refs/heads/main.zip
 unzip main.zip
 ```
 #### Alternative
+```bash
+git clone https://github.com/epigen-bioinfolab/STARLINCS.git
+cd STARLINCS
+```
+
+#### Alternative
 [![Download](https://img.shields.io/badge/Download-ZIP-blue?style=for-the-badge)](https://github.com/USERNAME/REPO/releases/latest/download/file.zip)
 
 #### Step 2: Run the following command for installation
