@@ -27,10 +27,10 @@ STARLINCS ranks drugs by the similarity (or reversal) between a user-supplied ge
 - Optional export of leading-edge genes for top-ranked drugs
 
 ## Pre-requisite
-- **Python 3.8+**: for gseapy dependency (Tested on Python 3.14 or older versions)
+- `Python 3.8+`: for gseapy dependency (Tested on Python 3.14 or older versions)
 - `pandas`, `gseapy`, `numpy` (installed automatically by `install.sh`)
 - `tkinter` (for the GUI; installed automatically by `install.sh`)
-- For macOS users, 'Rust' (Pre-built wheel doesn't exist for gseapy; Installed automatically by 'install.sh')
+- For macOS users, `Rust` (Pre-built wheel doesn't exist for gseapy; Installed automatically by `install.sh`)
 
 
 ## Installation
