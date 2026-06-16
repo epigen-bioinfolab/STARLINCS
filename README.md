@@ -1,5 +1,5 @@
 <p align="left">
-  <img src="resources/icon.png" width="160"/>
+  <img src="resources/for_github.png" width="160"/>
 </p>
 
 # **STARLINCS**
