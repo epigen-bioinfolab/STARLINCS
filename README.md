@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="resources/icon.png" width="100"/>
+</p>
+
 # **STARLINCS**
 
 > **Signature-driven Transcriptome Alignment for Repurposing**
