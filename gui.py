@@ -1418,7 +1418,8 @@ class _ScrollableTable(tk.Frame):
         for c in cells:
             c.bind("<Enter>",    _enter)
             c.bind("<Leave>",    _leave)
-            c.bind("<Button-1>", _click)
+            if self.COLS[col_idx][0] != "Leading Genes":   # ← add this check
+                c.bind("<Button-1>", _click)
 
         self._fit_row(row_frame, cells)
         self._row_frames.append((row_frame, rank_idx))
@@ -1530,8 +1531,22 @@ class PageResults(tk.Frame):
             title="Save Leading Genes")
         if not path:
             return
-        up_genes = str(row.get("lead_genes_up", "")).replace(";", "\n")
-        dn_genes = str(row.get("lead_genes_dn", "")).replace(";", "\n")
+
+        def _clean(val):
+            if not val or str(val).strip() in ("", "nan", "None", "NaN"):
+                return ""
+            # gseapy separates lead genes with ";" — normalise to newlines
+            return str(val).replace(";", "\n").replace(",", "\n").strip()
+
+        up_genes = _clean(row.get("lead_genes_up", ""))
+        dn_genes = _clean(row.get("lead_genes_dn", ""))
+
+        if not up_genes and not dn_genes:
+            messagebox.showwarning("No Leading Genes",
+                f"No leading genes found for {drug_name}.\n"
+                "This drug may have been skipped due to min/max gene thresholds.")
+            return
+
         with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr(f"{drug_name}_leading_genes_up.txt", up_genes)
             zf.writestr(f"{drug_name}_leading_genes_dn.txt", dn_genes)
@@ -1540,18 +1555,49 @@ class PageResults(tk.Frame):
     def _export_csv(self):
         if self._df is None:
             return
+
+        filetype_var = tk.StringVar(value="CSV files")
         path = filedialog.asksaveasfilename(
             defaultextension=".csv",
-            filetypes=[("CSV files", "*.csv"), ("TSV files", "*.tsv")],
+            filetypes=[("CSV files", "*.csv"), ("TSV files", "*.tsv"),
+                       ("Excel files", "*.xlsx")],
+            typevariable=filetype_var,
             title="Export Results")
         if not path:
             return
-        sep = "\t" if path.endswith(".tsv") else ","
+
+        # Use selected filter to determine format, not the extension
+        selected = filetype_var.get()
+        if "xlsx" in selected or "Excel" in selected:
+            ext = ".xlsx"
+        elif "tsv" in selected or "TSV" in selected:
+            ext = ".tsv"
+        else:
+            ext = ".csv"
+
+        # Force correct extension if missing or wrong
+        actual_ext = os.path.splitext(path)[1].lower()
+        if actual_ext != ext:
+            path = os.path.splitext(path)[0] + ext
+
         export_cols = ["drug", "target", "moa", "groups",
                        "NES_up", "NES_dn", "connectivity_score",
-                       "canonical_smiles", "inchi_key", "alias"]
+                       "alias", "canonical_smiles", "inchi_key"]
         out = self._df[[c for c in export_cols if c in self._df.columns]]
-        out.to_csv(path, index=False, sep=sep)
+
+        if ext == ".xlsx":
+            try:
+                out.to_excel(path, index=False, sheet_name="Results")
+            except ImportError:
+                messagebox.showerror(
+                    "Missing dependency",
+                    "Excel export requires the 'openpyxl' package.\n"
+                    "Install it with:\n  pip install openpyxl")
+                return
+        else:
+            sep = "\t" if ext == ".tsv" else ","
+            out.to_csv(path, index=False, sep=sep)
+
         messagebox.showinfo("Saved", f"Results exported to:\n{path}")
 
 

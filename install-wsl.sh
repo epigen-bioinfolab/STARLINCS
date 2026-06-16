@@ -218,7 +218,6 @@ fi
 echo ""
 echo -e "  ${BOLD}For future use:${RESET}"
 echo -e "  • Open a ${BOLD}new terminal${RESET} and run:  ${CYAN}starlincs gui${RESET}"
-echo -e "  • Or source your config in this terminal:  ${CYAN}source ~/.zshrc && starlincs gui${RESET}"
 echo ""
 echo "  Full install log saved to: $LOG_FILE"
 echo ""

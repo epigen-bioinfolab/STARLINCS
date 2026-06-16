@@ -142,8 +142,8 @@ else
 fi
 
 # ── Step 6/8: Install Python packages ────────────────────────────────
-step "[6/8]  Installing Python packages (pandas, gseapy, numpy, matplotlib)…"
-PACKAGES=("pandas" "gseapy" "numpy")
+step "[6/8]  Installing Python packages (pandas, gseapy, numpy, matplotlib, openpyxl)…"
+PACKAGES=("pandas" "gseapy" "numpy" "openpyxl")
 for pkg in "${PACKAGES[@]}"; do
     if "$VENV_PYTHON" -c "import $pkg" 2>/dev/null; then
         ok "$pkg already installed"

@@ -129,7 +129,7 @@ def run_pipeline(
     up_gmt = down_gmt = None   # track temp files for cleanup
 
     try:
-        # ── 2. Load reference matrix ──────────────────────────────────────────
+        # ── 1. Load reference matrix ──────────────────────────────────────────
         logger.info("── Step 1/5  Loading reference matrix: %s", reference)
         t0 = time.time()
         drugs_ranked = pd.read_csv(reference, header=0, index_col=False)
