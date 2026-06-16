@@ -1,3 +1,4 @@
+![STARLINCS](resources/icon.png)
 # **STARLINCS**
 
 > **Signature-driven Transcriptome Alignment for Repurposing**
