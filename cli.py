@@ -18,14 +18,12 @@ _file_fmt = logging.Formatter(
 _con_fmt = logging.Formatter("%(message)s")
 
 _fh = logging.FileHandler(LOG_FILE, mode="w", encoding="utf-8")
-_fh.setLevel(logging.DEBUG)          # everything → file
+_fh.setLevel(logging.DEBUG)
 _fh.setFormatter(_file_fmt)
 
 _ch = logging.StreamHandler(sys.stdout)
-_ch.setLevel(logging.INFO)           # clean console
+_ch.setLevel(logging.INFO)
 _ch.setFormatter(_con_fmt)
-
-# Attach to ROOT logger so gseapy / pandas warnings also land in the log
 _root = logging.getLogger()
 _root.setLevel(logging.DEBUG)
 _root.addHandler(_fh)
@@ -35,7 +33,7 @@ logger = logging.getLogger("starlincs.cli")
 
 
 def _handle_uncaught(exc_type, exc_value, exc_tb):
-    """Catch any exception that escapes main() and write it to the log."""
+    """Catching any exception that escapes main() and writing to the log."""
     if issubclass(exc_type, KeyboardInterrupt):
         logger.warning("Interrupted by user (KeyboardInterrupt).")
         sys.__excepthook__(exc_type, exc_value, exc_tb)
@@ -49,7 +47,7 @@ sys.excepthook = _handle_uncaught
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Imports that might fail (caught by the hook above)
+# Imports that might fail
 # ──────────────────────────────────────────────────────────────────────────────
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -133,8 +131,9 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "examples:\n"
+            "Graphical User Interface:\n"
             "  starlincs gui\n\n"
+            "Command-Line Interface:\n"
             "  starlincs run \\\n"
             "      --reference lung \\\n"
             "      --up up_genes.txt \\\n"
@@ -144,12 +143,13 @@ def build_parser() -> argparse.ArgumentParser:
             "      --max-gene 500 \\\n"
             "      --seed 1234 \\\n"
             "      --nperm 1000 \\\n"
-            "      --output results\n\n"
-            "  starlincs --version\n\n"
+            "      --leading-genes 10\\\n"
+            "      --output results.xls\n\n"
             "reference presets:\n"
             "  bone, breast, cervix, cns, haematopoietic_and_lymphoid_tissue,\n"
-            "  kidney, large_intestine, liver, lung, pancreas, placenta,\n"
-            "  prostate, skin, soft_tissue\n"
+            "  kidney, large_intestine, liver, lung, pancreas, prostate, skin\n"
+            "  starlincs --version\n\n"
+            "  starlincs run --help\n\n"
         ),
     )
     parser.add_argument("--version", action="version", version=f"starlincs {__version__}")
@@ -159,31 +159,32 @@ def build_parser() -> argparse.ArgumentParser:
 
     run_p = sub.add_parser(
         "run",
-        help="run analysis from the command line",
+        help="run analysis from the command line\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    run_p.add_argument("--reference", required=True, metavar="NAME_OR_PATH",
-                       help="preset name (e.g. lung) or path to a drug-gene CSV")
+    run_p.add_argument("--reference", required=True, metavar="PATH",
+                       help="reference preset name (e.g. lung) or\n"
+                       "path to a drug-gene CSV")
     run_p.add_argument("--up",   required=True, metavar="FILE",
-                       help="plain-text file with upregulated gene symbols, one per line")
+                       help="plain-text file (.txt) of upregulated genes\n(HGNC symbol), one per line\n")
     run_p.add_argument("--down", required=True, metavar="FILE",
-                       help="plain-text file with downregulated gene symbols, one per line")
+                       help="plain-text file (.txt) of downregulated genes\n(HGNC symbol), one per line\n")
     run_p.add_argument("--mode", choices=["mimic", "reverse"], required=True,
                        metavar="MODE",
-                       help="'reverse': rank drugs that invert your transcriptome; "
-                            "'mimic': rank drugs that reproduce it")
+                       help="reverse: rank drugs that reverses your transcriptome;"
+                            "mimic: rank drugs that mimics your transcriptome\n")
     run_p.add_argument("--seed",     type=int, default=1234, metavar="N",
-                       help="random seed (default: 1234)")
+                       help="random seed (default: 1234)\n")
     run_p.add_argument("--nperm",    type=int, default=1000, metavar="N",
-                       help="number of permutations (default: 1000)")
+                       help="number of permutations (default: 1000)\n")
     run_p.add_argument("--max-gene", type=int, default=500,  metavar="N",
-                       help="maximum genes per set (default: 500)")
+                       help="maximum genes per set (default: 500)\n")
     run_p.add_argument("--min-gene", type=int, default=20,   metavar="N",
-                       help="minimum genes per set (default: 20)")
+                       help="minimum genes per set (default: 20)\n")
     run_p.add_argument("--output", required=True, metavar="DIR",
-                       help="output directory; STARLINCS_results.csv will be saved here")
-    run_p.add_argument("--include-leading-genes", type=int, default=None, metavar="N",
-                       help="export leading genes for top N drugs as a zip alongside results")
+                       help="output directory; Result will be saved here or\na name with a '.csv', '.tsv', '.xls' extension\n")
+    run_p.add_argument("--leading-genes", type=int, default=None, metavar="N",
+                       help="export leading genes for top N drugs \nas a zip alongside results\n")
     return parser
 
 
@@ -216,21 +217,20 @@ def main() -> None:
             logger.info("Seed           : %d", args.seed)
             logger.info("Min/Max genes  : %d / %d", args.min_gene, args.max_gene)
             logger.info("Output dir     : %s", args.output)
-            if args.include_leading_genes:
-                logger.info("Leading genes for top %d drugs", args.include_leading_genes)
+            if args.leading_genes:
+                logger.info("Leading genes for top %d drugs", args.leading_genes)
 
             run_pipeline(
                 reference      = reference_path,
                 up_file        = args.up,
                 down_file      = args.down,
-                max_gene       = args.max_gene,
                 seed           = args.seed,
                 max_size       = args.max_gene,
                 min_size       = args.min_gene,
                 output         = args.output,
                 mode           = args.mode,
                 nperm          = args.nperm,
-                leading_genes_n= args.include_leading_genes,
+                leading_genes_n= args.leading_genes
             )
             success = True
 

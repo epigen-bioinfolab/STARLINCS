@@ -22,8 +22,8 @@ METADATA_FILE    = os.path.join(_RESOURCES, "metadata.csv")
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def load_and_filter_genes(gene_file: str, master_genes: set, max_gene: int) -> list[str]:
-    """Load a gene list, keep only genes present in the master universe, trim to max_gene."""
+def load_and_filter_genes(gene_file: str, master_genes: set, max_size: int) -> list[str]:
+    """Load a gene list, keep only genes present in the master universe, trim to max_size."""
 
     logger.debug("Loading user gene list from: %s", gene_file)
     with open(gene_file, "r") as fh:
@@ -31,7 +31,7 @@ def load_and_filter_genes(gene_file: str, master_genes: set, max_gene: int) -> l
 
     before = len(genes)
     filtered = [g for g in genes if g in master_genes]
-    trimmed  = filtered[:max_gene]
+    trimmed  = filtered[:max_size]
 
     logger.info(
         "  Gene file %-40s  raw=%d  matched=%d  after_trim=%d",
@@ -116,7 +116,6 @@ def run_pipeline(
     up_file: str,
     down_file: str,
     output: str,
-    max_gene: int =500,
     mode: str = "reverse",
     seed: int = 1234,
     max_size: int = 500,
@@ -145,8 +144,8 @@ def run_pipeline(
 
         # ── 2. Gene filtering ─────────────────────────────────────────────────
         logger.info("── Step 2/5  Gene filtering")
-        up_genes   = load_and_filter_genes(up_file,   master_genes, max_gene)
-        down_genes = load_and_filter_genes(down_file, master_genes, max_gene)
+        up_genes   = load_and_filter_genes(up_file,   master_genes, max_size)
+        down_genes = load_and_filter_genes(down_file, master_genes, max_size)
 
         if not up_genes:
             raise ValueError("No up-regulated genes survived filtering — check your gene symbols.")

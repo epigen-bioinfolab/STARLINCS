@@ -18,8 +18,45 @@ import traceback
 import webbrowser
 
 
-logger = logging.getLogger("starlincs.pipeline")
+# ── Logging setup (mirrors cli.py) ───────────────────────────────────────────
+LOG_FILE = os.path.join(os.getcwd(), "starlincs.log")
 
+_file_fmt = logging.Formatter(
+    "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+_con_fmt = logging.Formatter("%(message)s")
+
+_fh = logging.FileHandler(LOG_FILE, mode="w", encoding="utf-8")
+_fh.setLevel(logging.DEBUG)       # everything → file
+_fh.setFormatter(_file_fmt)
+
+_ch = logging.StreamHandler(sys.stdout)
+_ch.setLevel(logging.INFO)        # clean console output
+_ch.setFormatter(_con_fmt)
+
+_root_logger = logging.getLogger()
+_root_logger.setLevel(logging.DEBUG)
+_root_logger.addHandler(_fh)
+_root_logger.addHandler(_ch)
+
+logger = logging.getLogger("starlincs.gui")
+
+
+def _handle_uncaught(exc_type, exc_value, exc_tb):
+    """Catch any exception that escapes the mainloop and write it to the log."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        logger.warning("Interrupted by user (KeyboardInterrupt).")
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+        return
+    logger.critical(
+        "UNCAUGHT EXCEPTION — process will exit\n%s",
+        "".join(traceback.format_exception(exc_type, exc_value, exc_tb)),
+    )
+
+
+sys.excepthook = _handle_uncaught
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 # ── Font setup ───────────────────────────────────────────────────────────────
@@ -70,10 +107,8 @@ ORGAN_MAP = {
     "Liver": "liver.csv",
     "Lung": "lung.csv",
     "Pancreas": "pancreas.csv",
-    "Placenta": "placenta.csv",
     "Prostate": "prostate.csv",
-    "Skin": "skin.csv",
-    "Soft Tissue": "soft_tissue.csv",
+    "Skin": "skin.csv"
 }
 
 GENE_LIST_FILE = os.path.join(
@@ -99,9 +134,12 @@ def check_packages():
 
 def load_reference_genes(path):
     if not os.path.isfile(path):
+        logger.warning("Reference gene list not found: %s", path)
         return set()
     with open(path) as fh:
-        return {line.strip().upper() for line in fh if line.strip()}
+        genes = {line.strip().upper() for line in fh if line.strip()}
+    logger.debug("Loaded %d reference genes from %s", len(genes), path)
+    return genes
 
 def filter_genes(raw_text, reference, max_genes):
     seen, result = set(), []
@@ -124,12 +162,8 @@ def fmt_target(raw):
 
 # ── Tooltip helper ────────────────────────────────────────────────────────────
 class Tooltip:
-    """
-    Small popup that appears near a widget on hover.
-    Usage: Tooltip(widget, "Your help text here")
-    """
     PAD    = 8
-    DELAY  = 400   # ms before showing
+    DELAY  = 400
 
     def __init__(self, widget, text):
         self._widget  = widget
@@ -184,7 +218,6 @@ class Tooltip:
 
 # ── Help badge (the ? button) ─────────────────────────────────────────────────
 class HelpBadge(tk.Label):
-    """Small circular ? label that shows a Tooltip on hover."""
     def __init__(self, parent, tip_text, bg=SURFACE, **kw):
         super().__init__(parent,
                          text="?",
@@ -225,7 +258,6 @@ class FlatButton(tk.Button):
 
 
 class LinkLabel(tk.Label):
-    """Clickable label that opens a URL or calls a command."""
     def __init__(self, parent, text, action, bg=BG, **kw):
         super().__init__(parent, text=text,
                          font=font(11), fg=ACCENT, bg=bg,
@@ -257,7 +289,6 @@ class Card(tk.Frame):
 
 
 class LabeledSpinbox(tk.Frame):
-    """Label + Entry pair with an optional ? help badge."""
     def __init__(self, parent, label, from_, to, default, width=7, tip=None, **kw):
         super().__init__(parent, bg=SURFACE, **kw)
         self._min     = from_
@@ -292,11 +323,12 @@ class LabeledSpinbox(tk.Frame):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        logger.info("STARLINCS GUI starting up")
         self.title("STARLINCS")
         self.configure(bg=BG)
         self.resizable(True, True)
-        self.minsize(800, 720)
-        self.geometry("1100x790")
+        self.minsize(1080, 720)
+        self.geometry("1080x790")
 
         self.ref_genes = load_reference_genes(GENE_LIST_FILE)
 
@@ -308,6 +340,8 @@ class App(tk.Tk):
         self._container.pack(fill="both", expand=True)
 
         missing = check_packages()
+        if missing:
+            logger.warning("Missing required packages: %s", ", ".join(missing))
         pages = (PageInstall, PageHome, PageAnalysis, PageResults) \
                 if missing else (PageHome, PageAnalysis, PageResults)
 
@@ -319,10 +353,18 @@ class App(tk.Tk):
         self._container.rowconfigure(0, weight=1)
         self._container.columnconfigure(0, weight=1)
 
-        self.show_frame("PageInstall" if missing else "PageHome",
-                        missing=missing if missing else None)
+        start_page = "PageInstall" if missing else "PageHome"
+        logger.info("Navigating to %s", start_page)
+        self.show_frame(start_page, missing=missing if missing else None)
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _on_close(self):
+        logger.info("Application closed by user")
+        self.destroy()
 
     def show_frame(self, name, **kwargs):
+        logger.debug("show_frame → %s  kwargs=%s", name, list(kwargs.keys()))
         frame = self._frames[name]
         if hasattr(frame, "on_show"):
             frame.on_show(**kwargs)
@@ -331,26 +373,32 @@ class App(tk.Tk):
     def get_reference_matrix(self, csv_path):
         if csv_path not in self._csv_cache:
             import pandas as pd
+            logger.debug("Loading reference matrix: %s", csv_path)
             df = pd.read_csv(csv_path, header=0, index_col=False)
             gene_col = df.columns[0]
             df = df.rename(columns={gene_col: "gene_symbol"})
             self._csv_cache[csv_path] = df
+            logger.info("Reference matrix loaded — %d genes, %d drugs  [%s]",
+                        len(df), len(df.columns) - 1, os.path.basename(csv_path))
         return self._csv_cache[csv_path]
 
     def get_reference_genes_for(self, csv_path):
-        # Create a cache dictionary if it doesn't exist yet
         if not hasattr(self, "_gene_set_cache"):
             self._gene_set_cache = {}
-            
+
         if csv_path not in self._gene_set_cache:
             try:
                 df = self.get_reference_matrix(csv_path)
                 self._gene_set_cache[csv_path] = {
                     str(g).strip().upper() for g in df["gene_symbol"] if str(g).strip()
                 }
+                logger.debug("Gene set cached for %s — %d genes",
+                             os.path.basename(csv_path),
+                             len(self._gene_set_cache[csv_path]))
             except Exception:
+                logger.exception("Failed to build gene set for %s", csv_path)
                 return self.ref_genes
-                
+
         return self._gene_set_cache[csv_path]
 
     def get_metadata(self):
@@ -359,12 +407,16 @@ class App(tk.Tk):
             metadata_file = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "resources", "metadata.csv")
             if os.path.isfile(metadata_file):
+                logger.debug("Loading metadata: %s", metadata_file)
                 metadata = pd.read_csv(metadata_file)
                 self._meta_cache = (
                     metadata[['cmap_name', 'target', 'moa', 'canonical_smiles',
                                'inchi_key', 'compound_aliases', 'groups']]
                     .drop_duplicates(subset='cmap_name')
                 )
+                logger.info("Metadata loaded — %d compounds", len(self._meta_cache))
+            else:
+                logger.warning("Metadata file not found: %s", metadata_file)
         return self._meta_cache
 
 
@@ -415,7 +467,8 @@ class PageInstall(tk.Frame):
 
     def on_show(self, missing=None, **_):
         if missing:
-            for w in self._pkg_frame.winfo_children(): w.destroy()
+            for w in self._pkg_frame.winfo_children():
+                w.destroy()
             for pkg in missing:
                 tk.Label(self._pkg_frame, text=f"• {pkg}",
                          font=font(10, bold=True), fg=ERR_CLR,
@@ -427,28 +480,37 @@ class PageInstall(tk.Frame):
 
     def _worker(self):
         for pkg in check_packages():
-            self._log_append(f"Installing {pkg}…\n")
+            msg = f"Installing {pkg}…"
+            logger.info(msg)
+            self._log_append(msg + "\n")
             try:
                 r = subprocess.run([sys.executable, "-m", "pip", "install", pkg],
                                    capture_output=True, text=True)
                 if r.returncode == 0:
+                    logger.info("Package installed successfully: %s", pkg)
                     self._log_append(f"  ✔ {pkg} installed\n\n")
                 else:
+                    logger.error("pip install failed for %s:\n%s", pkg, r.stderr)
                     self._log_append(f"  ✗ Error:\n{r.stderr}\n\n")
             except Exception as e:
+                logger.exception("Exception while installing %s", pkg)
                 self._log_append(f"  ✗ {e}\n\n")
 
         still = check_packages()
         if still:
+            logger.error("Packages still missing after install attempt: %s", still)
             self._log_append(f"Still missing: {', '.join(still)}\n"
                              f"Run manually:  pip install {' '.join(still)}\n")
             self.after(0, lambda: self._install_btn.configure(
                 state="normal", text="Retry Install"))
         else:
+            logger.info("All required packages are now installed.")
             self._log_append("✔  All packages ready.\n")
             self.after(1500, lambda: self.controller.show_frame("PageHome"))
 
-    def _skip(self): self.controller.show_frame("PageHome")
+    def _skip(self):
+        logger.warning("Package installation skipped by user.")
+        self.controller.show_frame("PageHome")
 
     def _log_append(self, msg):
         def _do():
@@ -466,7 +528,6 @@ class PageHome(tk.Frame):
         self.controller = controller
         self._custom_matrix_path = None
 
-        # initialise count vars before any widget (including _gene_card) is built
         self._up_count_var = tk.StringVar(value="")
         self._dn_count_var = tk.StringVar(value="")
 
@@ -538,7 +599,6 @@ class PageHome(tk.Frame):
         ctrl_inner = tk.Frame(ctrl, bg=SURFACE, padx=16, pady=14)
         ctrl_inner.pack(fill="x")
 
-        # -- Organ picker --
         organ_col = tk.Frame(ctrl_inner, bg=SURFACE)
         organ_col.pack(side="left", padx=(0, 20))
 
@@ -550,14 +610,13 @@ class PageHome(tk.Frame):
                   "This selects the pre-built drug-gene ranking matrix for that tissue.",
                   bg=SURFACE).pack(side="left", padx=(3, 0))
 
-        self._organ_var = tk.StringVar(value="Lung")
+        self._organ_var = tk.StringVar(value="Haematopoietic and Lymphoid Tissue")
         self._organ_cb = ttk.Combobox(organ_col, textvariable=self._organ_var,
                                       values=list(ORGAN_MAP.keys()),
-                                      state="readonly", width=30, font=font(11))
+                                      state="readonly", width=32, font=font(11))
         self._organ_cb.pack(anchor="w", pady=(4, 0))
         self._organ_cb.bind("<<ComboboxSelected>>", self._on_organ_change)
 
-        # -- Custom matrix upload --
         matrix_col = tk.Frame(ctrl_inner, bg=SURFACE)
         matrix_col.pack(side="left", padx=(0, 20))
 
@@ -586,10 +645,8 @@ class PageHome(tk.Frame):
                   activeforeground="white", activebackground=ERR_CLR,
                   command=self._clear_matrix).pack(side="left")
 
-        # Divider
         tk.Frame(ctrl_inner, bg=BORDER, width=1).pack(side="left", fill="y", padx=16)
 
-        # -- Min Gene spinbox --
         self._min_gene_sb = LabeledSpinbox(
             ctrl_inner, "MIN GENE", from_=1, to=200, default=20, width=8,
             tip="Minimum number of genes from your list that must appear in a drug's\n"
@@ -597,7 +654,6 @@ class PageHome(tk.Frame):
                 "Recommended: 15–25.")
         self._min_gene_sb.pack(side="left", padx=(0, 14))
 
-        # -- Max Gene spinbox --
         self._max_gene_sb = LabeledSpinbox(
             ctrl_inner, "MAX GENE", from_=10, to=2000, default=500, width=8,
             tip="Maximum number of genes from your input list to use.\n"
@@ -605,7 +661,6 @@ class PageHome(tk.Frame):
                 "Recommended: 200–500 for balanced sensitivity and specificity.")
         self._max_gene_sb.pack(side="left", padx=(0, 14))
 
-        # -- Seed spinbox --
         self._seed_sb = LabeledSpinbox(
             ctrl_inner, "SEED", from_=0, to=99999, default=1234, width=8,
             tip="Random seed for GSEA permutation testing.\n"
@@ -613,7 +668,6 @@ class PageHome(tk.Frame):
                 "Any integer works — 1234 is the default.")
         self._seed_sb.pack(side="left", padx=(0, 14))
 
-        # -- Perm spinbox --
         self._perm_sb = LabeledSpinbox(
             ctrl_inner, "PERMUTATIONS", from_=10, to=99999, default=1000, width=10,
             tip="Number of permutations for GSEA null distribution estimation.\n"
@@ -638,9 +692,8 @@ class PageHome(tk.Frame):
         footer.pack(fill="x", pady=(10, 0))
         footer_inner = tk.Frame(footer, bg=SURFACE2, padx=14, pady=8)
         footer_inner.pack(fill="x")
-        footer_inner.columnconfigure(0, weight=1)  # links expand
+        footer_inner.columnconfigure(0, weight=1)
 
-        # Left: quick links
         links_frame = tk.Frame(footer_inner, bg=SURFACE2)
         links_frame.grid(row=0, column=0, sticky="w")
 
@@ -659,19 +712,15 @@ class PageHome(tk.Frame):
         LinkLabel(links_frame, "Contact",
                   LINKS["contact"], bg=SURFACE2).pack(side="left")
 
-        # Right: reference status + action buttons stacked
         right_frame = tk.Frame(footer_inner, bg=SURFACE2)
         right_frame.grid(row=0, column=1, sticky="e")
 
-        # Reference status (top-right, small)
         self._ref_status_lbl = tk.Label(right_frame, text="", font=font(8),
                                         bg=SURFACE2, anchor="e")
         self._ref_status_lbl.pack(anchor="e", pady=(0, 6))
-        
-        # AT THE VERY END OF PageHome.__init__ (after button creation), add:
+
         self._update_status()
 
-        # Action buttons (bottom-right)
         btn_row = tk.Frame(right_frame, bg=SURFACE2)
         btn_row.pack(anchor="e")
         FlatButton(btn_row, "Mimic", BTN_MIMIC, "white",
@@ -693,6 +742,8 @@ class PageHome(tk.Frame):
               selectforeground=[("readonly", TEXT)])
 
     def _on_organ_change(self, _=None):
+        organ = self._organ_var.get()
+        logger.info("Organ changed to: %s", organ)
         self._clear_matrix()
 
     def _upload_matrix(self):
@@ -701,32 +752,35 @@ class PageHome(tk.Frame):
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
         if path:
             self._custom_matrix_path = path
+            logger.info("Custom matrix uploaded: %s", path)
             name = os.path.basename(path)
             display = name if len(name) <= 32 else "…" + name[-29:]
             self._matrix_lbl.configure(text=display, fg=SUCCESS, font=font(9))
             import pandas as pd
             df = pd.read_csv(path, usecols=[0])
-
             self.controller.ref_genes = {
                 str(x).upper().strip()
                 for x in df.iloc[:, 0]
                 if pd.notna(x)
             }
+            logger.debug("Custom matrix gene count: %d", len(self.controller.ref_genes))
             self._update_status()
 
     def _clear_matrix(self):
+        if self._custom_matrix_path:
+            logger.info("Custom matrix cleared.")
         self._custom_matrix_path = None
         self._matrix_lbl.configure(text="Using preset organ",
                                    fg=TEXT2, font=font(9, italic=True))
         self._update_status()
 
     def _load_example(self):
-        """Load the bundled example up.txt and down.txt into the gene boxes."""
         example_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "resources", "example")
         up_path   = os.path.join(example_dir, "up.txt")
         down_path = os.path.join(example_dir, "down.txt")
 
+        logger.info("Loading example dataset from: %s", example_dir)
         loaded = []
         if os.path.isfile(up_path):
             with open(up_path) as fh:
@@ -743,13 +797,20 @@ class PageHome(tk.Frame):
             loaded.append("downregulated")
 
         if loaded:
+            logger.info("Example dataset loaded: %s", ", ".join(loaded))
             self._update_status()
         else:
+            logger.warning("Example files not found in: %s", example_dir)
             messagebox.showwarning(
                 "Example Not Found",
                 f"Example files not found in:\n{example_dir}\n\n"
                 "Expected: up.txt and down.txt")
-
+    
+    def _clear_gene_box(self, textwidget, title):
+        textwidget.delete("1.0", "end")
+        logger.info("Gene box cleared: %s", title)
+        self._update_status()
+        
     def _gene_card(self, parent, title, hdr_color, border_color, bg_color, col):
         pad = (0, 8) if col == 0 else (8, 0)
         card = tk.Frame(parent, bg=bg_color,
@@ -763,7 +824,6 @@ class PageHome(tk.Frame):
         tk.Label(hdr_bar, text=title, font=font(11, bold=True),
                  fg="white", bg=hdr_color).pack(side="left", padx=14)
 
-        # count label — shows "N valid / N entered", updated by _update_status()
         count_var = self._up_count_var if col == 0 else self._dn_count_var
         tk.Label(hdr_bar, textvariable=count_var,
                  font=font(9), fg="white", bg=hdr_color,
@@ -774,7 +834,9 @@ class PageHome(tk.Frame):
                 title=f"Upload {title}",
                 filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
             if path:
-                with open(path) as fh: content = fh.read()
+                logger.info("Gene list uploaded (%s): %s", title, path)
+                with open(path) as fh:
+                    content = fh.read()
                 tw.delete("1.0", "end")
                 tw.insert("1.0", content)
                 self._update_status()
@@ -792,6 +854,13 @@ class PageHome(tk.Frame):
         vsb.pack(side="right", fill="y", padx=(0, 4), pady=4)
         txt.pack(fill="both", expand=True, padx=8, pady=(6, 8))
         txt.bind("<KeyRelease>", lambda e: self._update_status())
+        
+        tk.Button(hdr_bar, text="CLEAR",
+                  font=font(9, bold=True), fg=ERR_CLR, bg="white",
+                  relief="flat", cursor="hand2", padx=5, pady=3,
+                  activeforeground="white", activebackground=ERR_CLR,
+                  command=lambda tw=txt: self._clear_gene_box(tw, title)).pack(side="right", padx=(0, 4))
+
 
         tk.Button(hdr_bar, text="Upload .txt",
                   font=font(9), fg=hdr_color, bg="white",
@@ -802,11 +871,9 @@ class PageHome(tk.Frame):
         return txt
 
     def _active_reference_genes(self):
-        # 1. Use custom matrix if uploaded
         if self._custom_matrix_path:
             return self.controller.get_reference_genes_for(self._custom_matrix_path)
-            
-        # 2. Otherwise, dynamically load genes from the currently selected preset organ
+
         organ = self._organ_var.get()
         csv_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "data", ORGAN_MAP[organ])
@@ -816,10 +883,9 @@ class PageHome(tk.Frame):
         ref   = self._active_reference_genes()
         max_g = int(self._max_gene_sb.value)
 
-        # 1. Update the bottom-right reference status label
         if ref:
             self._ref_status_lbl.configure(
-                text=f"✔  {len(ref):,} reference genes loaded", fg=SUCCESS)
+                text=f"{len(ref):,} reference gene loaded")
         else:
             self._ref_status_lbl.configure(
                 text="⚠  Reference gene list not found", fg=WARN_CLR)
@@ -862,6 +928,7 @@ class PageHome(tk.Frame):
                 g.strip().upper() for g in dn_raw.splitlines() if g.strip()))[:max_g]
 
         if not up_genes and not dn_genes:
+            logger.warning("Run attempted with no valid genes entered.")
             messagebox.showwarning("No Genes",
                 "Please enter at least one gene symbol in either box.")
             return
@@ -876,9 +943,16 @@ class PageHome(tk.Frame):
             organ_label = organ
 
         if not os.path.isfile(csv_path):
+            logger.error("Drug ranking file not found: %s", csv_path)
             messagebox.showerror("Missing Data File",
                 f"Drug ranking file not found:\n{csv_path}")
             return
+
+        logger.info(
+            "Starting analysis — organ=%s  mode=%s  up=%d  dn=%d  "
+            "min=%d  max=%d  seed=%d  perm=%d",
+            organ_label, mode, len(up_genes), len(dn_genes),
+            min_g, max_g, seed, perm)
 
         self.controller.show_frame("PageAnalysis",
             organ=organ_label, csv_path=csv_path,
@@ -962,6 +1036,7 @@ class PageAnalysis(tk.Frame):
 
     def _cancel(self):
         self._cancel_flag.set()
+        logger.warning("Analysis cancelled by user.")
         self._log_append("Cancelled by user.\n")
         self.controller.show_frame("PageHome")
 
@@ -969,12 +1044,14 @@ class PageAnalysis(tk.Frame):
                 mode, max_gene, min_gene, seed, perm):
         import gc
 
+        _pipeline_logger = logging.getLogger("starlincs.pipeline")
         tmpdir = None
         try:
             try:
                 import pandas as pd
                 import gseapy as gp
             except ImportError as e:
+                _pipeline_logger.error("Missing package: %s", e)
                 self._log_append(f"Error: missing package — {e}\n"
                                  f"Run:  pip install {' '.join(REQUIRED_PACKAGES)}\n")
                 self._fail()
@@ -983,6 +1060,7 @@ class PageAnalysis(tk.Frame):
             try:
                 meta_slim = self.controller.get_metadata()
             except Exception as e:
+                _pipeline_logger.warning("Could not load metadata: %s", e)
                 self._log_append(f"Warning: could not load metadata — {e}\n")
                 meta_slim = None
 
@@ -993,23 +1071,32 @@ class PageAnalysis(tk.Frame):
             write_gmt(up_gmt, f"{tag}_up", up_genes)
             write_gmt(dn_gmt, f"{tag}_dn", dn_genes)
 
-            self._log_append(
+            header = (
                 f"Organ / Reference : {organ}\n"
                 f"Mode              : {mode.upper()}\n"
                 f"Upregulated       : {len(up_genes)} genes\n"
                 f"Downregulated     : {len(dn_genes)} genes\n"
                 f"Min/Max gene      : {min_gene} / {max_gene}\n"
-                f"Permutations      : {perm}   Seed: {seed}\n\n")
+                f"Permutations      : {perm}   Seed: {seed}\n\n"
+            )
+            _pipeline_logger.info(
+                "Pipeline params — organ=%s  mode=%s  up=%d  dn=%d  "
+                "min=%d  max=%d  perm=%d  seed=%d",
+                organ, mode, len(up_genes), len(dn_genes),
+                min_gene, max_gene, perm, seed)
+            self._log_append(header)
 
             try:
                 drugs_ranked = self.controller.get_reference_matrix(csv_path)
             except Exception as e:
+                _pipeline_logger.error("Error reading CSV %s: %s", csv_path, e)
                 self._log_append(f"Error reading CSV: {e}\n")
                 self._fail()
                 return
 
             drugs = [c for c in drugs_ranked.columns if c != "gene_symbol"]
             total, done = len(drugs) * 2, 0
+            _pipeline_logger.info("Drugs to process: %d", len(drugs))
             self._log_append(f"Drugs to process: {len(drugs)}\n\n")
 
             upreg, downreg = [], []
@@ -1017,6 +1104,7 @@ class PageAnalysis(tk.Frame):
             self._log_append("Upregulated genes are now being mapped to reference\n")
             for drug in drugs:
                 if self._cancel_flag.is_set():
+                    _pipeline_logger.info("Pipeline cancelled at upregulated phase.")
                     return
                 self._prog_lbl.set(drug)
                 t0 = time.time()
@@ -1031,8 +1119,11 @@ class PageAnalysis(tk.Frame):
                     row["DRUG"] = drug
                     upreg.append(row)
                     del pre
-                    self._log_append(f"  {drug:<34} {time.time()-t0:.1f}s\n")
+                    elapsed = time.time() - t0
+                    _pipeline_logger.debug("UP  %-34s %.1fs", drug, elapsed)
+                    self._log_append(f"  {drug:<34} {elapsed:.1f}s\n")
                 except Exception as e:
+                    _pipeline_logger.warning("UP  %s — error: %s", drug, e)
                     self._log_append(f"  {drug} — error: {e}\n")
                 done += 1
                 self._prog_var.set(done / total * 100)
@@ -1040,6 +1131,7 @@ class PageAnalysis(tk.Frame):
             self._log_append("\nDownregulated genes are now being mapped to reference\n")
             for drug in drugs:
                 if self._cancel_flag.is_set():
+                    _pipeline_logger.info("Pipeline cancelled at downregulated phase.")
                     return
                 self._prog_lbl.set(drug)
                 t0 = time.time()
@@ -1054,8 +1146,11 @@ class PageAnalysis(tk.Frame):
                     row["DRUG"] = drug
                     downreg.append(row)
                     del pre
-                    self._log_append(f"  {drug:<34} {time.time()-t0:.1f}s\n")
+                    elapsed = time.time() - t0
+                    _pipeline_logger.debug("DN  %-34s %.1fs", drug, elapsed)
+                    self._log_append(f"  {drug:<34} {elapsed:.1f}s\n")
                 except Exception as e:
+                    _pipeline_logger.warning("DN  %s — error: %s", drug, e)
                     self._log_append(f"  {drug} — error: {e}\n")
                 done += 1
                 self._prog_var.set(done / total * 100)
@@ -1063,6 +1158,8 @@ class PageAnalysis(tk.Frame):
             gc.collect()
 
             if not upreg or not downreg:
+                _pipeline_logger.error(
+                    "No GSEA results produced — check gene symbols and min/max settings.")
                 self._log_append(
                     "\nError: no GSEA results were produced. "
                     "Check that gene symbols match the reference matrix "
@@ -1099,6 +1196,11 @@ class PageAnalysis(tk.Frame):
 
             self._prog_var.set(100)
             self._prog_lbl.set("Complete")
+            _pipeline_logger.info(
+                "Analysis complete — %d drugs ranked. Top drug: %s (score=%.4f)",
+                len(merged),
+                merged.iloc[0]["drug"] if len(merged) else "N/A",
+                merged.iloc[0]["connectivity_score"] if len(merged) else 0.0)
             self._log_append("\nAnalysis complete.\n")
 
             self.after(0, lambda: self.controller.show_frame(
@@ -1111,6 +1213,8 @@ class PageAnalysis(tk.Frame):
 
         except Exception:
             tb = traceback.format_exc()
+            logging.getLogger("starlincs.pipeline").critical(
+                "Unexpected error in pipeline:\n%s", tb)
             self._log_append(f"\nUnexpected error — analysis aborted:\n{tb}\n")
             self._fail()
 
@@ -1129,8 +1233,9 @@ class PageAnalysis(tk.Frame):
         import shutil
         try:
             shutil.rmtree(tmpdir, ignore_errors=True)
+            logger.debug("Temp directory cleaned up: %s", tmpdir)
         except Exception:
-            pass
+            logger.warning("Failed to clean up temp directory: %s", tmpdir)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1173,7 +1278,6 @@ class _ScrollableTable(tk.Frame):
 
         self._total_width = sum(c[1] for c in self.COLS)
 
-        # precompute column x offsets
         self._col_x = []
         x = 0
         for (_, wd, _, _, _) in self.COLS:
@@ -1320,6 +1424,7 @@ class _ScrollableTable(tk.Frame):
 
         rows  = list(df.iterrows())
         total = len(rows)
+        logger.debug("Populating results table with %d rows", total)
 
         def build_chunk(start_idx):
             if token != self._populate_token:
@@ -1330,7 +1435,6 @@ class _ScrollableTable(tk.Frame):
             for rank_idx in range(start_idx, end_idx):
                 _, r = rows[rank_idx]
                 self._build_row(rank_idx, r)
-            # update scrollregion after each chunk so rows appear progressively
             self._inner.update_idletasks()
             bbox = self._canvas.bbox("all")
             if bbox:
@@ -1400,7 +1504,6 @@ class _ScrollableTable(tk.Frame):
                 cell.bind("<Button-1>",
                           lambda e, idx=rank_idx: self._on_export_genes(self._df.iloc[idx]))
 
-        # store cell refs on frame for fast recolor
         row_frame._cells = cells
 
         def _enter(e, f=row_frame):
@@ -1418,7 +1521,7 @@ class _ScrollableTable(tk.Frame):
         for c in cells:
             c.bind("<Enter>",    _enter)
             c.bind("<Leave>",    _leave)
-            if self.COLS[col_idx][0] != "Leading Genes":   # ← add this check
+            if self.COLS[col_idx][0] != "Leading Genes":
                 c.bind("<Button-1>", _click)
 
         self._fit_row(row_frame, cells)
@@ -1517,6 +1620,8 @@ class PageResults(tk.Frame):
             f"Upregulated genes: {up_count}     Downregulated genes: {dn_count}     "
             f"Drugs ranked: {len(merged_df)}"
         )
+        logger.info("Results page shown — %d total drugs, displaying top %d",
+                    len(merged_df), len(self._df))
         self._loading.place(relx=0.5, rely=0.5, anchor="center")
         self._loading.lift()
         self.update_idletasks()
@@ -1524,24 +1629,26 @@ class PageResults(tk.Frame):
 
     def _export_leading_genes_row(self, row):
         drug_name = str(row.get("drug", "drug")).replace(" ", "_").replace("/", "-")
+        logger.info("Exporting leading genes for drug: %s", drug_name)
         path = filedialog.asksaveasfilename(
             defaultextension=".zip",
             initialfile=f"{drug_name}_leading_genes.zip",
             filetypes=[("ZIP archive", "*.zip")],
             title="Save Leading Genes")
         if not path:
+            logger.debug("Leading genes export cancelled by user.")
             return
 
         def _clean(val):
             if not val or str(val).strip() in ("", "nan", "None", "NaN"):
                 return ""
-            # gseapy separates lead genes with ";" — normalise to newlines
             return str(val).replace(";", "\n").replace(",", "\n").strip()
 
         up_genes = _clean(row.get("lead_genes_up", ""))
         dn_genes = _clean(row.get("lead_genes_dn", ""))
 
         if not up_genes and not dn_genes:
+            logger.warning("No leading genes found for drug: %s", drug_name)
             messagebox.showwarning("No Leading Genes",
                 f"No leading genes found for {drug_name}.\n"
                 "This drug may have been skipped due to min/max gene thresholds.")
@@ -1550,6 +1657,7 @@ class PageResults(tk.Frame):
         with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr(f"{drug_name}_leading_genes_up.txt", up_genes)
             zf.writestr(f"{drug_name}_leading_genes_dn.txt", dn_genes)
+        logger.info("Leading genes exported to: %s", path)
         messagebox.showinfo("Saved", f"Leading genes exported to:\n{path}")
 
     def _export_csv(self):
@@ -1564,9 +1672,9 @@ class PageResults(tk.Frame):
             typevariable=filetype_var,
             title="Export Results")
         if not path:
+            logger.debug("CSV export cancelled by user.")
             return
 
-        # Use selected filter to determine format, not the extension
         selected = filetype_var.get()
         if "xlsx" in selected or "Excel" in selected:
             ext = ".xlsx"
@@ -1575,7 +1683,6 @@ class PageResults(tk.Frame):
         else:
             ext = ".csv"
 
-        # Force correct extension if missing or wrong
         actual_ext = os.path.splitext(path)[1].lower()
         if actual_ext != ext:
             path = os.path.splitext(path)[0] + ext
@@ -1585,10 +1692,12 @@ class PageResults(tk.Frame):
                        "alias", "canonical_smiles", "inchi_key"]
         out = self._df[[c for c in export_cols if c in self._df.columns]]
 
+        logger.info("Exporting results to: %s  (format=%s, rows=%d)", path, ext, len(out))
         if ext == ".xlsx":
             try:
                 out.to_excel(path, index=False, sheet_name="Results")
             except ImportError:
+                logger.error("openpyxl not installed — Excel export failed.")
                 messagebox.showerror(
                     "Missing dependency",
                     "Excel export requires the 'openpyxl' package.\n"
@@ -1598,10 +1707,16 @@ class PageResults(tk.Frame):
             sep = "\t" if ext == ".tsv" else ","
             out.to_csv(path, index=False, sep=sep)
 
+        logger.info("Results exported successfully.")
         messagebox.showinfo("Saved", f"Results exported to:\n{path}")
 
 
 # ════════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
+    logger.info("="*60)
+    logger.info("STARLINCS GUI — session start")
+    logger.info("Log file: %s", LOG_FILE)
+    logger.info("="*60)
     app = App()
     app.mainloop()
+    logger.info("STARLINCS GUI — session end")
