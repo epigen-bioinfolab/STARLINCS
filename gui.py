@@ -589,7 +589,7 @@ class PageHome(tk.Frame):
             except Exception:
                 pass
 
-        # ── Main body ─────────────────────────────────────────────────────────
+	# ── Main body ─────────────────────────────────────────────────────────
         body = tk.Frame(self, bg=BG, padx=24, pady=16)
         body.pack(fill="both", expand=True)
 
@@ -599,6 +599,7 @@ class PageHome(tk.Frame):
         ctrl_inner = tk.Frame(ctrl, bg=SURFACE, padx=16, pady=14)
         ctrl_inner.pack(fill="x")
 
+        # -- Organ picker --
         organ_col = tk.Frame(ctrl_inner, bg=SURFACE)
         organ_col.pack(side="left", padx=(0, 20))
 
@@ -606,8 +607,7 @@ class PageHome(tk.Frame):
         organ_hdr.pack(anchor="w")
         SectionLabel(organ_hdr, text="SELECT ORGAN", bg=SURFACE).pack(side="left")
         HelpBadge(organ_hdr,
-                  "Choose the tissue/organ type that matches your experimental context.\n"
-                  "This selects the pre-built drug-gene ranking matrix for that tissue.",
+                  "Select the tissue or organ type matching your experimental context. This loads the pre-built drug–gene ranking matrix for that tissue.",
                   bg=SURFACE).pack(side="left", padx=(3, 0))
 
         self._organ_var = tk.StringVar(value="Haematopoietic and Lymphoid Tissue")
@@ -617,6 +617,7 @@ class PageHome(tk.Frame):
         self._organ_cb.pack(anchor="w", pady=(4, 0))
         self._organ_cb.bind("<<ComboboxSelected>>", self._on_organ_change)
 
+        # -- Custom matrix upload --
         matrix_col = tk.Frame(ctrl_inner, bg=SURFACE)
         matrix_col.pack(side="left", padx=(0, 20))
 
@@ -624,7 +625,7 @@ class PageHome(tk.Frame):
         matrix_hdr.pack(anchor="w")
         SectionLabel(matrix_hdr, text="CUSTOM REFERENCE (OPTIONAL)", bg=SURFACE).pack(side="left")
         HelpBadge(matrix_hdr,
-                  "Upload your own drug-gene ranking CSV instead of using a preset organ.\n"
+                  "Upload your own drug-gene ranking CSV instead of using a preset organ.\n\n"
                   "Format: first column = gene symbols, remaining columns = one drug each, "
                   "values = ranking scores (higher = more upregulated in that drug's signature).",
                   bg=SURFACE).pack(side="left", padx=(3, 0))
@@ -645,34 +646,37 @@ class PageHome(tk.Frame):
                   activeforeground="white", activebackground=ERR_CLR,
                   command=self._clear_matrix).pack(side="left")
 
+        # Divider
         tk.Frame(ctrl_inner, bg=BORDER, width=1).pack(side="left", fill="y", padx=16)
 
+        # -- Min Gene spinbox --
         self._min_gene_sb = LabeledSpinbox(
             ctrl_inner, "MIN GENE", from_=1, to=200, default=20, width=8,
-            tip="Minimum number of genes from your list that must appear in a drug's\n"
-                "gene set for that drug to be scored. Sets below this size are skipped.\n"
-                "Recommended: 15–25.")
+            tip="Minimum number of genes in both upregulated and downregulated gene set.\n"
+                "Recommended: 15–50.")
         self._min_gene_sb.pack(side="left", padx=(0, 14))
 
+        # -- Max Gene spinbox --
         self._max_gene_sb = LabeledSpinbox(
-            ctrl_inner, "MAX GENE", from_=10, to=2000, default=500, width=8,
-            tip="Maximum number of genes from your input list to use.\n"
+            ctrl_inner, "MAX GENE", from_=10, to=5000, default=500, width=8,
+            tip="Maximum number of genes in both upregulated and downregulated gene set."
                 "If you provide more genes than this, only the first N are used.\n"
-                "Recommended: 200–500 for balanced sensitivity and specificity.")
+                "Recommended: 200–2000 for balanced sensitivity and specificity.")
         self._max_gene_sb.pack(side="left", padx=(0, 14))
 
+        # -- Seed spinbox --
         self._seed_sb = LabeledSpinbox(
             ctrl_inner, "SEED", from_=0, to=99999, default=1234, width=8,
-            tip="Random seed for GSEA permutation testing.\n"
-                "Set the same value to reproduce identical results across runs.\n"
-                "Any integer works — 1234 is the default.")
+            tip="Random seed for GSEA permutation testing."
+                "Set the same value to reproduce identical results across runs.")
         self._seed_sb.pack(side="left", padx=(0, 14))
 
+        # -- Perm spinbox --
         self._perm_sb = LabeledSpinbox(
             ctrl_inner, "PERMUTATIONS", from_=10, to=99999, default=1000, width=10,
-            tip="Number of permutations for GSEA null distribution estimation.\n"
-                "Higher values give more accurate p-values but take longer.\n"
-                "100 is fast for exploration; 1000 is standard for publication.")
+            tip="Number of permutations for GSEA null distribution estimation."
+                "Higher values give more statistically significant connectivity score but take longer.\n"
+                "100 is fast for exploration; >1000 is standard for publication.")
         self._perm_sb.pack(side="left", padx=(0, 14))
 
         self._style_widgets()
