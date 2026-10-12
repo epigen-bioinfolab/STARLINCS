@@ -18,12 +18,14 @@ _file_fmt = logging.Formatter(
 _con_fmt = logging.Formatter("%(message)s")
 
 _fh = logging.FileHandler(LOG_FILE, mode="w", encoding="utf-8")
-_fh.setLevel(logging.DEBUG)
+_fh.setLevel(logging.DEBUG)          # everything → file
 _fh.setFormatter(_file_fmt)
 
 _ch = logging.StreamHandler(sys.stdout)
-_ch.setLevel(logging.INFO)
+_ch.setLevel(logging.INFO)           # clean console
 _ch.setFormatter(_con_fmt)
+
+# Attach to ROOT logger so gseapy / pandas warnings also land in the log
 _root = logging.getLogger()
 _root.setLevel(logging.DEBUG)
 _root.addHandler(_fh)
@@ -33,7 +35,7 @@ logger = logging.getLogger("starlincs.cli")
 
 
 def _handle_uncaught(exc_type, exc_value, exc_tb):
-    """Catching any exception that escapes main() and writing to the log."""
+    """Catch any exception that escapes main() and write it to the log."""
     if issubclass(exc_type, KeyboardInterrupt):
         logger.warning("Interrupted by user (KeyboardInterrupt).")
         sys.__excepthook__(exc_type, exc_value, exc_tb)
@@ -47,7 +49,7 @@ sys.excepthook = _handle_uncaught
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Imports that might fail
+# Imports that might fail (caught by the hook above)
 # ──────────────────────────────────────────────────────────────────────────────
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -68,8 +70,16 @@ __version__ = "1.0.0"
 # ──────────────────────────────────────────────────────────────────────────────
 
 def launch_gui() -> None:
-    venv_python = os.path.join(SCRIPT_DIR, ".venv/bin/python")
-    app_path    = os.path.join(SCRIPT_DIR, "gui.py")
+    project_root = os.path.dirname(SCRIPT_DIR)
+
+    if platform.system() == "Windows":
+        venv_python = os.path.join(project_root, ".venv", "Scripts", "pythonw.exe")
+        if not os.path.exists(venv_python):
+            venv_python = os.path.join(project_root, ".venv", "Scripts", "python.exe")
+    else:
+        venv_python = os.path.join(project_root, ".venv", "bin", "python")
+
+    app_path = os.path.join(SCRIPT_DIR, "gui.py")
     logger.info("Launching GUI: %s %s", venv_python, app_path)
     subprocess.run([venv_python, app_path])
 
@@ -159,7 +169,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     run_p = sub.add_parser(
         "run",
-        help="run analysis from the command line\n",
+        help="run analysis from the command line",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     run_p.add_argument("--reference", required=True, metavar="PATH",

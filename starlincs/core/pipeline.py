@@ -44,7 +44,6 @@ def load_and_filter_genes(gene_file: str, master_genes: set, max_size: int) -> l
 
     return trimmed
 
-
 def create_temp_gmt(gene_list: list[str], set_name: str) -> str:
     """Write a single-line GMT file to a temp location and return its path."""
     tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".gmt", delete=False)
@@ -252,7 +251,6 @@ def run_pipeline(
             output_df.to_excel(output_file, index=False, engine="openpyxl")
 
         logger.info("  Results saved to: %s", output_file)
-        
 
         # ── Leading genes zip ─────────────────────────────────────────────────
         if leading_genes_n is not None:

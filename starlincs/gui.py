@@ -17,6 +17,19 @@ import logging
 import traceback
 import webbrowser
 
+import ctypes
+import sys
+
+# Make tkinter DPI-aware on Windows
+if sys.platform == "win32":
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-monitor DPI aware
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()   # Fallback for older Windows
+        except Exception:
+            pass
+
 
 # ── Logging setup (mirrors cli.py) ───────────────────────────────────────────
 LOG_FILE = os.path.join(os.getcwd(), "starlincs.log")
@@ -327,8 +340,8 @@ class App(tk.Tk):
         self.title("STARLINCS")
         self.configure(bg=BG)
         self.resizable(True, True)
-        self.minsize(1080, 720)
-        self.geometry("1080x790")
+        self.minsize(1280, 780)
+        self.geometry("1280x780")
 
         self.ref_genes = load_reference_genes(GENE_LIST_FILE)
 
@@ -613,7 +626,7 @@ class PageHome(tk.Frame):
         self._organ_var = tk.StringVar(value="Haematopoietic and Lymphoid Tissue")
         self._organ_cb = ttk.Combobox(organ_col, textvariable=self._organ_var,
                                       values=list(ORGAN_MAP.keys()),
-                                      state="readonly", width=32, font=font(11))
+                                      state="readonly", width=30, font=font(11))
         self._organ_cb.pack(anchor="w", pady=(4, 0))
         self._organ_cb.bind("<<ComboboxSelected>>", self._on_organ_change)
 
@@ -680,6 +693,7 @@ class PageHome(tk.Frame):
         self._perm_sb.pack(side="left", padx=(0, 14))
 
         self._style_widgets()
+
 
         # ── Gene input boxes ──────────────────────────────────────────────────
         boxes_outer = tk.Frame(body, bg=BG)
@@ -1560,7 +1574,7 @@ class PageResults(tk.Frame):
         super().__init__(parent, bg=BG)
         self.controller = controller
         self._df        = None
-        self._full_df   = None 
+        self._full_df   = None
 
         hdr = tk.Frame(self, bg=HDR_BG, pady=18)
         hdr.pack(fill="x")
@@ -1617,8 +1631,8 @@ class PageResults(tk.Frame):
         self._table.clear()
         import gc; gc.collect()
 
-        self._full_df = merged_df.reset_index(drop=True)   # ← full results, kept
-        self._df = self._full_df.head(100)                  # ← top 100, for the table
+        self._full_df = merged_df.reset_index(drop=True)   # full results, kept for export
+        self._df = self._full_df.head(100)                  # top 100, for the table
         mode_str = "Mimic" if mode == "mimic" else "Reverse"
         self._title_var.set("Results — Top 100 Candidates")
         self._summary_var.set(
