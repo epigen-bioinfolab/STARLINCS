@@ -1560,6 +1560,7 @@ class PageResults(tk.Frame):
         super().__init__(parent, bg=BG)
         self.controller = controller
         self._df        = None
+        self._full_df   = None 
 
         hdr = tk.Frame(self, bg=HDR_BG, pady=18)
         hdr.pack(fill="x")
@@ -1616,7 +1617,8 @@ class PageResults(tk.Frame):
         self._table.clear()
         import gc; gc.collect()
 
-        self._df = merged_df.reset_index(drop=True).head(100)
+        self._full_df = merged_df.reset_index(drop=True)   # ← full results, kept
+        self._df = self._full_df.head(100)                  # ← top 100, for the table
         mode_str = "Mimic" if mode == "mimic" else "Reverse"
         self._title_var.set("Results — Top 100 Candidates")
         self._summary_var.set(
@@ -1665,7 +1667,7 @@ class PageResults(tk.Frame):
         messagebox.showinfo("Saved", f"Leading genes exported to:\n{path}")
 
     def _export_csv(self):
-        if self._df is None:
+        if self._full_df is None:
             return
 
         filetype_var = tk.StringVar(value="CSV files")
@@ -1694,7 +1696,7 @@ class PageResults(tk.Frame):
         export_cols = ["drug", "target", "moa", "groups",
                        "NES_up", "NES_dn", "connectivity_score",
                        "alias", "canonical_smiles", "inchi_key"]
-        out = self._df[[c for c in export_cols if c in self._df.columns]]
+        out = self._full_df[[c for c in export_cols if c in self._full_df.columns]]
 
         logger.info("Exporting results to: %s  (format=%s, rows=%d)", path, ext, len(out))
         if ext == ".xlsx":
