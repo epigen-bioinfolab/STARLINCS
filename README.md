@@ -4,7 +4,7 @@
 
 # STARLINCS
 
-**S**ignature-driven **T**ranscriptome **A**lignment for **R**epurposing via **LINCS**
+**S**ignature-driven **T**ranscriptome **A**lignment for **R**epurposing **LINCS**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
