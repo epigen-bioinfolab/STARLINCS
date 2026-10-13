@@ -1,10 +1,10 @@
-<p align="left">
-  <img src="resources/for_github.png" width="160" alt="STARLINCS logo"/>
+<p align="center">
+  <img src="resources/Github_banner.png" width="100%" alt="STARLINCS: Signature-driven Transcriptome Alignment for Repurposing via LINCS"/>
 </p>
 
 # STARLINCS
 
-**S**ignature-driven **T**ranscriptome **A**lignment for **R**epurposing via **LINCS**
+**S**ignature-driven **T**ranscriptome **A**lignment for **R**epurposing **LINCS**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
@@ -16,6 +16,11 @@
 STARLINCS helps researchers find therapeutic candidates by comparing a transcriptomic gene signature against a reference library of drug perturbation profiles. You provide up- and down-regulated genes, and STARLINCS uses Gene Set Enrichment Analysis (GSEA) to calculate a connectivity score for each reference drug. The output is a ranked list of drugs by their ability to **mimic** or **reverse** your signature.
 
 STARLINCS is available as both a **Graphical User Interface (GUI)** for routine use at the bench and a **Command-Line Interface (CLI)** for scripted analysis and HPC pipelines.
+
+<p align="center">
+  <img src="resources/workflow.png" width="700" alt="STARLINCS workflow: a query signature is compared against a reference drug-gene matrix, and drugs are ranked by connectivity score"/>
+</p>
+<p align="center"><em>STARLINCS workflow. Example output shown for Reverse mode (values are illustrative).</em></p>
 
 **Two ways to use it**
 
@@ -56,11 +61,11 @@ Dependencies (`pandas`, `gseapy`, `numpy`, `tkinter` for the GUI) are installed 
    > **Important:** during installation, tick **"Add python.exe to PATH"** before clicking **Install Now**.
 
 2. Download the Windows version:
-   [**Download STARLINCS for Windows**](https://github.com/epigen-bioinfolab/STARLINCS/archive/refs/heads/starlincs-for-windows.zip)
+   [**Download STARLINCS for Windows**](https://github.com/epigen-bioinfolab/STARLINCS/releases/download/v1.0.0/starlincs-for-windows.zip)
 
 3. Extract the `.zip` file to a convenient location.
 4. Double-click the **setup** file to run the installer.
-5. Once installation finishes, open the STARLINCS folder and double-click the **`LAUNCH_STARLINCS`** VBScript file (or the desktop shortcut) to start the GUI.
+5. Once installation finishes, double-click the **`LAUNCH_STARLINCS`** VBScript file (or the desktop shortcut) to start the GUI.
 
 ### Linux
 
