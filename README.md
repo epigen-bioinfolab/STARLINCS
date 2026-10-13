@@ -65,7 +65,7 @@ Dependencies (`pandas`, `gseapy`, `numpy`, `tkinter` for the GUI) are installed 
 
 3. Extract the `.zip` file to a convenient location.
 4. Double-click the **setup** file to run the installer.
-5. Once installation finishes, open the STARLINCS folder and double-click the **`LAUNCH_STARLINCS`** VBScript file (or the desktop shortcut) to start the GUI.
+5. Once installation finishes, double-click the **`LAUNCH_STARLINCS`** VBScript file (or the desktop shortcut) to start the GUI.
 
 ### Linux
 
