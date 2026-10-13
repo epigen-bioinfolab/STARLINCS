@@ -61,7 +61,7 @@ Dependencies (`pandas`, `gseapy`, `numpy`, `tkinter` for the GUI) are installed 
    > **Important:** during installation, tick **"Add python.exe to PATH"** before clicking **Install Now**.
 
 2. Download the Windows version:
-   [**Download STARLINCS for Windows**](https://github.com/epigen-bioinfolab/STARLINCS/archive/refs/heads/starlincs-for-windows.zip)
+   [**Download STARLINCS for Windows**](https://github.com/epigen-bioinfolab/STARLINCS/releases/download/v1.0.0/starlincs-for-windows.zip)
 
 3. Extract the `.zip` file to a convenient location.
 4. Double-click the **setup** file to run the installer.
