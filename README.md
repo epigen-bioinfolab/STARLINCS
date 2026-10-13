@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/Github_banner.png" width="100%" alt="STARLINCS: Signature-driven Transcriptome Alignment for Repurposing via LINCS"/>
+  <img src="starlincs/resources/Github_banner.png" width="100%" alt="STARLINCS: Signature-driven Transcriptome Alignment for Repurposing via LINCS"/>
 </p>
 
 # STARLINCS
