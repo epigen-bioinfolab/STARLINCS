@@ -17,6 +17,11 @@ STARLINCS helps researchers find therapeutic candidates by comparing a transcrip
 
 STARLINCS is available as both a **Graphical User Interface (GUI)** for routine use at the bench and a **Command-Line Interface (CLI)** for scripted analysis and HPC pipelines.
 
+<p align="center">
+  <img src="resources/workflow.png" width="700" alt="STARLINCS workflow: a query signature is compared against a reference drug-gene matrix, and drugs are ranked by connectivity score"/>
+</p>
+<p align="center"><em>STARLINCS workflow. Example output shown for Reverse mode (values are illustrative).</em></p>
+
 **Two ways to use it**
 
 | Mode | Use it when you want to… | Example |
