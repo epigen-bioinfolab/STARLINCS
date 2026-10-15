@@ -252,12 +252,6 @@ Other files produced:
 
 STARLINCS uses the **GSEA Prerank** method. Your up- and down-regulated gene sets are tested against each drug's ranked gene list. The gene set is "walked" down the list, increasing a running sum when a gene matches and decreasing it otherwise; the peak deviation is the Enrichment Score (ES). Permutation testing (`--nperm`) then yields a Normalized Enrichment Score (NES), which allows fair comparison across drugs. NES is computed separately for the up (`NES_up`) and down (`NES_dn`) sets and combined into the final connectivity score.
 
-**Why a consensus reference?** LINCS holds over 1 million perturbation signatures, which is expensive to query directly, and the L1000 assay produces considerable variability between signatures of the same drug. STARLINCS builds its references as follows:
-
-1. **Stratification by organ of origin:** signatures are grouped by the tissue origin of their cell lines.
-2. **Density-based clustering:** within each subset, consistent signatures are kept and noisy profiles are filtered out.
-3. **Rank aggregation:** all reliable signatures for a drug are aggregated into one prototype ranked list.
-
 ## Troubleshooting
 
 | Problem | Solution |
