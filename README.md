@@ -51,8 +51,6 @@ Dependencies (`pandas`, `gseapy`, `numpy`, `tkinter` for the GUI) are installed 
 
 ## Installation
 
-Choose your platform below. Each section covers everything you need, starting with Python.
-
 ### Windows
 
 **Step 1: Install Python (3.9 or newer)**
