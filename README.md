@@ -51,23 +51,53 @@ Dependencies (`pandas`, `gseapy`, `numpy`, `tkinter` for the GUI) are installed 
 
 ## Installation
 
+Choose your platform below. Each section covers everything you need, starting with Python.
+
 ### Windows
 
-1. Check your Python version in Command Prompt (`Win` + `R`, type `cmd`):
-   ```bat
+**Step 1: Install Python (3.9 or newer)**
+
+1. Open Command Prompt (`Win` + `R`, type `cmd`) and check your version:
+```bat
    python --version
-   ```
-   If Python is missing or older than 3.9, install it from [python.org](https://www.python.org/).
-   > **Important:** during installation, tick **"Add python.exe to PATH"** before clicking **Install Now**.
+```
+2. If Python is missing or older than 3.9, download it from [python.org](https://www.python.org/downloads/).
+3. Run the installer and **tick "Add python.exe to PATH"** at the bottom of the first screen **before** clicking **Install Now**.
+   > **Important:** if you skip this, the STARLINCS installer will not find Python.
+4. Close and reopen Command Prompt, then confirm it works:
+```bat
+   python --version
+```
+   > **Installed Python without PATH?** Re-run the Python installer, choose **Modify**, click **Next**, and tick **Add Python to environment variables**. Or uninstall and reinstall with the PATH box ticked.
 
-2. Download the Windows version:
+**Step 2: Install STARLINCS**
+
+1. Download the Windows version:
    [**Download STARLINCS for Windows**](https://github.com/epigen-bioinfolab/STARLINCS/releases/download/v1.0.0/starlincs-for-windows.zip)
+2. Extract the `.zip` file to a convenient location.
+3. Double-click the **setup** file to run the installer.
+4. Once installation finishes, double-click the **`LAUNCH_STARLINCS`** VBScript file (or the desktop shortcut) to start the GUI.
 
-3. Extract the `.zip` file to a convenient location.
-4. Double-click the **setup** file to run the installer.
-5. Once installation finishes, double-click the **`LAUNCH_STARLINCS`** VBScript file (or the desktop shortcut) to start the GUI.
+---
 
 ### Linux
+
+**Step 1: Install Python (3.9 or newer)**
+
+1. Check your version:
+```bash
+   python3 --version
+```
+2. If Python is missing or older than 3.9, install it with your package manager. On Debian/Ubuntu:
+```bash
+   sudo apt update && sudo apt install -y python3 python3-pip python3-venv
+```
+3. Confirm Python is on your PATH:
+```bash
+   which python3
+```
+
+**Step 2: Install STARLINCS**
 
 ```bash
 git clone https://github.com/epigen-bioinfolab/STARLINCS
@@ -90,11 +120,28 @@ Verify the installation:
 starlincs --version
 ```
 
-> **Windows Subsystem for Linux (WSL):** follow the Linux steps above and run every command from the WSL terminal, not from Command Prompt or PowerShell.
+> **Windows Subsystem for Linux (WSL):** follow the Linux steps above, including installing Python inside WSL, and run every command from the WSL terminal, not from Command Prompt or PowerShell.
+
+---
 
 ### macOS
 
-The steps are the same as on Linux:
+**Step 1: Install Python (3.9 or newer)**
+
+1. Check your version in Terminal:
+```bash
+   python3 --version
+```
+2. If Python is missing or older than 3.9, install it from [python.org](https://www.python.org/downloads/macos/) or with Homebrew:
+```bash
+   brew install python
+```
+3. Open a new Terminal window and confirm Python is on your PATH:
+```bash
+   which python3
+```
+
+**Step 2: Install STARLINCS**
 
 ```bash
 git clone https://github.com/epigen-bioinfolab/STARLINCS
@@ -103,7 +150,7 @@ chmod +x install.sh && ./install.sh
 starlincs --version
 ```
 
-(Alternatively, download and unzip `main.zip` as shown in the Linux section.) The installer takes care of Rust, which `gseapy` needs on macOS.
+Alternatively, download and unzip `main.zip` as shown in the Linux section. The installer takes care of Rust, which `gseapy` needs on macOS.
 
 ## Quick Start
 
